@@ -1,0 +1,17 @@
+{
+  "name": "workflowai",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "clean": "rm -f bun.lockb"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
+    "openai": "^4.52.7",
+    "winston": "^3.13.1"
+  }
+}

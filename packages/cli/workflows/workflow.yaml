@@ -1,0 +1,49 @@
+workflow:
+  startNode: readInputNode
+  endNode: writeOutputNode
+
+tasks:
+  - id: readInputNode
+    type: fileRead
+    config:
+      filePath: "input/input.txt"
+
+  - id: identifyPersonasNode
+    type: openaiTool
+    dependencies:
+      - readInputNode
+    config:
+      provider: openai
+      promptId: business_identify_personas
+      model: "text-davinci-003"
+      temperature: 0.7
+      maxTokens: 150
+
+  - id: bestYearEverNode
+    type: openaiTool
+    dependencies:
+      - identifyPersonasNode
+    config:
+      provider: openai
+      promptId: business_persona_best_year_ever
+      model: "text-davinci-003"
+      temperature: 0.7
+      maxTokens: 150
+
+  - id: createPitchNode
+    type: openaiTool
+    dependencies:
+      - bestYearEverNode
+    config:
+      provider: openai
+      promptId: business_pitch
+      model: "text-davinci-003"
+      temperature: 0.7
+      maxTokens: 150
+
+  - id: writeOutputNode
+    type: fileWrite
+    dependencies:
+      - createPitchNode
+    config:
+      filePath: "output/output.txt"

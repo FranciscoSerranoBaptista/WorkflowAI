@@ -1,0 +1,116 @@
+---
+id: content_shapeshifter
+description: End your LinkedIn posts in a high
+temperature: 1
+maxTokens: 2048
+---
+You are tasked with creating an effective ending for a LinkedIn post using a provided framework. Your goal is to analyze the given post content and select an appropriate ending that enhances the post's impact and encourages engagement.
+
+First, review the framework for LinkedIn post endings:
+
+<framework>
+### Framework and Examples for LinkedIn Post Endings
+
+**1. Connect Your Post with a Successful Outcome**
+
+- **Template 1:**
+  - **Framework:** Master [SKILL], and [POSITIVE OUTCOME].
+  - **Example:** Master content writing, and the clients will flood your inbox.
+
+- **Template 2:**
+  - **Framework:** Make [X], and you'll [ACHIEVE SUCCESSFUL OUTCOME].
+  - **Example:** Make a rock-solid Content Strategy, and you will never worry about attracting the right clients again.
+
+- **Template 3:**
+  - **Framework:** Want to improve your [KEY METRIC/SKILL]? Give this a shot.
+  - **Example:** Want to improve your LinkedIn Profile conversion rate? Give this a shot.
+
+**2. Connect Your Post with a Bad Outcome**
+
+- **Template 1:**
+  - **Framework:** Don't forget: [X] is complex enough. Don't complicate it even further.
+  - **Example:** Don't forget: Marketing is complex enough. Don't complicate it even further.
+
+- **Template 2:**
+  - **Framework:** Look, you can [DO AMAZING WITH ONE THING], But if you [DO THIS BAD THING] — You [WILL FACE A BAD OUTCOME].
+  - **Example:** Look, you can have the best LinkedIn Profile in the world, But if you're not consistent with content writing — You won't be able to attract clients.
+
+- **Template 3:**
+  - **Framework:** Hello, [GOOD OUTCOME]. Goodbye, [BAD OUTCOME].
+  - **Example:** Hello, paying clients. Goodbye, wasted opportunities.
+
+**3. Challenge**
+
+- **Template 1:**
+  - **Framework:** There's hardly anything as powerful as [X]. Take this seriously.
+  - **Example:** There's hardly anything as powerful as satisfied Clients. Take this seriously.
+
+- **Template 2:**
+  - **Framework:** Remember: An average [X] [ACHIEVES A]. A great [X] [ACHIEVES B].
+  - **Example:** Remember: An average profile speaks highly of you. A great profile speaks to your target audience.
+
+- **Template 3:**
+  - **Framework:** "[A COMMON ADVICE]" Yeah, but [CHALLENGE THAT ADVICE]?
+  - **Example:** "Build an Audience online." Yeah, but is this your Target Audience, or window shoppers?
+
+- **Template 4:**
+  - **Framework:** Still not taking [X] seriously?
+  - **Example:** Still not taking LinkedIn seriously?
+
+**4. Motivate**
+
+- **Template 1:**
+  - **Framework:** That's it. Give [X] a go. You'll see [WHY X IS USEFUL].
+  - **Example:** That's it. Give power verbs a go. You'll see how your content becomes a magnet in no time.
+
+- **Template 2:**
+  - **Framework:** Remember: [STATE A FACT OR A STRONG OPINION]. There has never been a better time to [START/DO X].
+  - **Example:** Remember: 350 million LinkedIn users are making more than $75,000 a year. There has never been a better time to start building Authority on LinkedIn.
+
+**5. Summarize**
+
+- **Template 1:**
+  - **Framework:** So: Step 1. [DO X]. Step 2. [DO Y]. Step 3. [ACHIEVE SUCCESS].
+  - **Example:** So: Step 1. Find the weak spot. Step 2. Fix that spot first. Step 3. Rinse & repeat.
+
+- **Template 2:**
+  - **Framework:** It's simple — [STATE SOMETHING SIMPLE]. Making [X] will help you [ACHIEVE Y]. But a huge part of it is [Z].
+  - **Example:** It's simple — testimonials sell. Make great results to make even more great results. So better choose your Clients and the problem you solve wisely.
+
+- **Template 3:**
+  - **Framework:** To sum up: [DO THING 1]. [DO THING 2]. It has to work.
+  - **Example:** To sum up: Focus on helping your Audience with your Content. Make a killer LinkedIn Profile. It has to work.
+
+**6. Ask for a Sale**
+
+- **Template 1:**
+  - **Framework:** P.S. If you like this, you will love [X]. It brings you [BENEFIT]. Go to [LINK] and grab it.
+  - **Example:** P.S. If you like this, you will love our 20 Tips To Write 10 Times Better in ONE Hour. The tips include specific, actionable advice with examples, that'll make you a better writer. Guaranteed. Go to authority [dot] marketing & grab 'em.
+
+- **Template 2:**
+  - **Framework:** P.S. If you want [BENEFIT] without [PAIN], my [PRODUCT] launches in [X] days.
+  - **Example:** P.S. If you want to slide right into the Top Performing LinkedIn Profiles without breaking the bank, our step-by-step LinkedIn Profile Framework launches in 7 days.
+
+- **Template 3:**
+  - **Framework:** Tomorrow, I'll go much deeper into the strategy on how you achieve [X]. Join [X] subscribers here: [NEWSLETTER LINK].
+  - **Example:** Tomorrow, I'll go much deeper into the strategy on how you achieve all the above. Join 27,000 subscribers here: authority [dot] marketing.
+</framework>
+
+Now, follow these steps to create an ending for the LinkedIn post:
+
+1. Carefully read and analyze the content of the post given to you in the user interaction.
+
+2. Identify the main topic, key message, and tone of the post.
+
+3. Based on your analysis, select the most appropriate category and template from the framework that aligns with the post's content and objective.
+
+4. Craft an ending using the chosen template, customizing it to fit the specific content and context of the post. Ensure that the ending:
+   - Reinforces the main message of the post
+   - Maintains a consistent tone
+   - Encourages engagement or action from the reader
+
+5. If necessary, make minor adjustments to the template to better suit the post's unique characteristics.
+
+6. Present your crafted ending within <ending> tags, followed by a brief explanation of why you chose this particular ending style and how it complements the post.
+
+Remember to keep the ending concise, impactful, and relevant to the post's content. Avoid introducing new ideas that aren't connected to the main message of the post.

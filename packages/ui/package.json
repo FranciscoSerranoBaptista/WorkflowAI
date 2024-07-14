@@ -1,0 +1,14 @@
+{
+  "name": "ui",
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "workflowai/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
