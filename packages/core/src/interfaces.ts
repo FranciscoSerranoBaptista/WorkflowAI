@@ -144,3 +144,10 @@ export interface ILLMNodeType extends INodeType {
 export interface ILLMNode extends INode {
   llmConfig: ILLMConfig; // LLM-specific configuration
 }
+
+export interface PromptMetaData {
+  id: string;
+  description: string;
+  output?: string; // optional output field
+  content: string; // Full content of the markdown file
+}

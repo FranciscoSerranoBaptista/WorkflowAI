@@ -4,10 +4,16 @@
   "workspaces": [
     "packages/*"
   ],
+  "paths": {
+    "workflowai.core": [
+      "../core/src"
+    ]
+  },
   "scripts": {
     "clean": "rm -f bun.lockb"
   },
   "dependencies": {
+    "@types/js-yaml": "^4.0.9",
     "axios": "^1.7.2",
     "commander": "^12.1.0",
     "js-yaml": "^4.1.0",

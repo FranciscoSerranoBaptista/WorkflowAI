@@ -7,6 +7,10 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
+    "paths": {
+      "workflowai.core": ["../core/src"]
+    },
+    "types": ["node", "js-yaml"],
 
     // Bundler mode
     "moduleResolution": "bundler",

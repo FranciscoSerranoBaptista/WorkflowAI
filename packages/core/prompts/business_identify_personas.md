@@ -1,6 +1,7 @@
 ---
 id: business_identify_personas
 description: Given a target audience and a problem, create a framework to identify and describe people in transition.
+output:avatar_description
 ---
 You are tasked with creating a framework to identify and describe people in transition within a given target audience, based on a specific problem. This framework will help uncover potential ideal members for a community or product focused on addressing the given problem.
 

@@ -1,6 +1,4 @@
-import { WorkflowEngine } from "./workflow";
 import type { INodeExecutionData, INode, INodeTypes } from "./interfaces";
-import OpenAI from "openai";
 import { interpolatePrompt } from "./utils";
 
 async function executeLLMNode(

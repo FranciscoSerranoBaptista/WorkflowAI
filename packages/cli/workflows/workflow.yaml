@@ -1,6 +1,6 @@
-workflow:
-  startNode: readInputNode
-  endNode: writeOutputNode
+settings:
+  parallelExecution: false
+  retryOnFailure: true
 
 tasks:
   - id: readInputNode

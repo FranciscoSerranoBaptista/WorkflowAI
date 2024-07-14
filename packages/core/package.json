@@ -1,5 +1,5 @@
 {
-  "name": "workflowai/core",
+  "name": "workflowai.core",
   "module": "index.ts",
   "type": "module",
   "scripts": {

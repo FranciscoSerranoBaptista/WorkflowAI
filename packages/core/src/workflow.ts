@@ -5,18 +5,26 @@ import type {
   INodeExecutionData,
   IConnectionDetails,
   IExtendedNode,
+  PromptMetaData,
 } from "./interfaces";
-import logger from "./logger";
-import nodeTypesRegistry from "./nodes/nodeTypeRegistry";
-import { executeClusterNode, orchestrateLLMExecution } from "./agents";
+import createWorkflowLogger from "./logger";
+import { orchestrateLLMExecution } from "./agents";
 
 export class WorkflowEngine {
   private nodeTypesRegistry: INodeTypes;
   private workflow: IWorkflow;
+  private context: { [key: string]: any } = {};
+  private logger: any;
+  private prompts: { [key: string]: PromptMetaData };
 
-  constructor(nodeTypesRegistry: INodeTypes) {
+  constructor(
+    nodeTypesRegistry: INodeTypes,
+    prompts: { [key: string]: PromptMetaData },
+  ) {
     this.nodeTypesRegistry = nodeTypesRegistry;
     this.workflow = this.initializeEmptyWorkflow();
+    this.logger = console; // Use console logger until workflow is set
+    this.prompts = prompts;
   }
 
   private initializeEmptyWorkflow(): IWorkflow {
@@ -43,6 +51,7 @@ export class WorkflowEngine {
   // Set the workflow (e.g., after parsing YAML)
   setWorkflow(workflow: IWorkflow): void {
     this.workflow = workflow;
+    this.logger = createWorkflowLogger(this.workflow.id);
   }
 
   // Get the current workflow
@@ -218,6 +227,15 @@ export class WorkflowEngine {
     );
   }
 
+  // Get all nodes without outgoing connections (potential end nodes)
+  getEndNodes(): INode[] {
+    return this.workflow.nodes.filter(
+      (node) =>
+        !this.workflow.connections.connectionsBySourceNode[node.id] ||
+        this.workflow.connections.connectionsBySourceNode[node.id].length === 0,
+    );
+  }
+
   // Validate the workflow
   validateWorkflow(): string[] {
     const errors: string[] = [];
@@ -298,23 +316,23 @@ export class WorkflowEngine {
 
     const nodeOutputs: { [nodeId: string]: INodeExecutionData[] } = {};
     const executionOrder = this.getExecutionOrder();
-    logger.info(`Execution order: ${executionOrder.join(", ")}`);
+    this.logger.info(`Execution order: ${executionOrder.join(", ")}`);
 
     for (const nodeId of executionOrder) {
       const node = this.getNode(nodeId);
       if (!node) {
-        logger.error(`Node ${nodeId} not found in workflow`);
+        this.logger.error(`Node ${nodeId} not found in workflow`);
         continue; // Skip the execution of this node
       }
 
       const nodeType = this.nodeTypesRegistry[node.type];
       if (!nodeType) {
-        logger.error(`Node type ${node.type} not found in registry`);
+        this.logger.error(`Node type ${node.type} not found in registry`);
         continue; // Skip the execution of this node
       }
 
       if (node.type === "LLMClusterNode") {
-        logger.info(`Executing LLM Cluster Node ${node.id}`);
+        this.logger.info(`Executing LLM Cluster Node ${node.id}`);
         await orchestrateLLMExecution(
           nodeId,
           this.getNode.bind(this),
@@ -323,22 +341,22 @@ export class WorkflowEngine {
         continue; // Skip further normal execution of this node
       }
 
-      logger.info(`Executing node ${node.id}`);
+      this.logger.info(`Executing node ${node.id}`);
       for (let trial = 0; trial < (node.maxTries || 1); trial++) {
         try {
           const inputData = this.getInputDataForNode(nodeId, nodeOutputs);
-          logger.info(
+          this.logger.info(
             `Node ${node.id} input data: ${JSON.stringify(inputData)}`,
           );
           const outputData = await nodeType.execute.call(node, inputData);
-          logger.info(
+          this.logger.info(
             `Node ${node.id} produced output: ${JSON.stringify(outputData)}`,
           );
           nodeOutputs[nodeId] = outputData;
           break; // Break the retry loop
         } catch (error) {
           if (node.retryOnFail) {
-            logger.warn(
+            this.logger.warn(
               `Execution error on node ${node.id}, retrying... (${trial + 1}/${node.maxTries})`,
             );
             if (node.waitBetweenRetries) {
@@ -349,7 +367,9 @@ export class WorkflowEngine {
           } else {
             const errorMessage =
               error instanceof Error ? error.message : "Unknown error";
-            logger.error(`Execution error on node ${node.id}: ${errorMessage}`);
+            this.logger.error(
+              `Execution error on node ${node.id}: ${errorMessage}`,
+            );
             if (node.onError === "stop") {
               throw new Error(
                 `Workflow halted due to failure in node ${node.id}`,
@@ -459,20 +479,33 @@ export class WorkflowEngine {
     for (const conn of incomingConnections) {
       const sourceNodeOutput = nodeOutputs[conn.sourceNodeId];
 
-      // Check if the source output is available
-      if (sourceNodeOutput) {
-        if (conn.destinationInputName && conn.sourceOutputName) {
-          inputData.push({
-            json: {
-              inputName: conn.destinationInputName,
-              output: sourceNodeOutput,
-            },
-          });
-        } else {
-          inputData.push(...sourceNodeOutput);
-        }
+      // Check if the source node has a defined output
+      const sourceNode = this.getNode(conn.sourceNodeId);
+      if (sourceNode && this.prompts[sourceNode.name]?.output) {
+        const outputKey = this.prompts[sourceNode.name].output!;
+        const specificOutput =
+          sourceNodeOutput?.[0]?.json?.[outputKey] || "<Default Value>";
+        inputData.push({
+          json: {
+            ...sourceNodeOutput[0]?.json,
+            [conn.destinationInputName || ""]: specificOutput,
+          },
+        });
       } else {
-        console.warn(`No output found for source node ${conn.sourceNodeId}`);
+        if (sourceNodeOutput) {
+          if (conn.destinationInputName && conn.sourceOutputName) {
+            inputData.push({
+              json: {
+                inputName: conn.destinationInputName,
+                output: sourceNodeOutput,
+              },
+            });
+          } else {
+            inputData.push(...sourceNodeOutput);
+          }
+        } else {
+          console.warn(`No output found for source node ${conn.sourceNodeId}`);
+        }
       }
     }
 

@@ -1,6 +1,8 @@
 import { Command } from "commander";
+import { WorkflowEngine } from "workflowai.core";
+import nodeTypesRegistry from "../../core/src/nodes/nodeTypeRegistry";
+import { loadPrompts } from "./utils";
 import { WorkflowBuilder } from "./workflowBuilder";
-import { WorkflowEngine } from "./workflow";
 
 const program = new Command();
 
@@ -17,13 +19,11 @@ program
       const builder = new WorkflowBuilder(file);
       const workflow = builder.buildWorkflow();
 
-      // Create workflow engine and set the workflow
-      const nodeTypesRegistry: NodeTypesRegistry = {
-        // Define or load your node types here (e.g., HTTP nodes, OpenAI nodes, etc.)
-        // For example, see the next section about setting up node types registry
-      };
+      // Load prompts metadata
+      const prompts = loadPrompts();
 
-      const engine = new WorkflowEngine(nodeTypesRegistry);
+      // Create the workflow engine
+      const engine = new WorkflowEngine(nodeTypesRegistry, prompts);
       engine.setWorkflow(workflow);
 
       // Execute the workflow
