@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { WorkflowEngine } from "workflowai.core";
-import nodeTypesRegistry from "../../core/src/nodes/nodeTypeRegistry";
+import { nodeRegistry } from "workflowai.nodes";
+import { WorkflowEngine } from "workflowai.workflow";
 import { loadPrompts } from "./utils";
 import { WorkflowBuilder } from "./workflowBuilder";
 
@@ -23,7 +23,7 @@ program
       const prompts = loadPrompts();
 
       // Create the workflow engine
-      const engine = new WorkflowEngine(nodeTypesRegistry, prompts);
+      const engine = new WorkflowEngine(nodeRegistry);
       engine.setWorkflow(workflow);
 
       // Execute the workflow

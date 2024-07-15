@@ -1,9 +1,11 @@
 {
-  "name": "cli",
+  "name": "workflowai.cli",
   "module": "index.ts",
   "type": "module",
   "dependencies": {
-    "workflowai.core": "workspace:*"
+    "workflowai.workflow": "workspace:*",
+    "workflowai.common": "workspace:*",
+    "workflowai.nodes": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "^1.1.6"

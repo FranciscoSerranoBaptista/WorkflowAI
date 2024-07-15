@@ -1,9 +1,10 @@
 {
-  "name": "workflowai.ui",
+  "name": "workflowai.nodes",
   "module": "index.ts",
   "type": "module",
   "dependencies": {
-    "workflowai.workflow": "workspace:*"
+    "workflowai.workflow": "workspace:*",
+    "workflowai.common": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

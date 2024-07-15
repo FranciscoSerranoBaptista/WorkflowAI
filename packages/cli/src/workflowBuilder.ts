@@ -1,14 +1,21 @@
+import Ajv from "ajv";
 import fs from "fs";
 import yaml from "js-yaml";
-import { join } from "path";
+import { createWorkflowLogger } from "workflowai.common";
 import type {
   IConnectionDetails,
   INode,
   IWorkflow,
   PromptMetaData,
-} from "workflowai.core";
-import { interpolatePrompt } from "workflowai.core";
+} from "workflowai.common";
+import { interpolatePrompt } from "workflowai.workflow";
+import schema from "../schema/workflow.schema.json";
 import { loadPrompts } from "./utils";
+import {
+  WorkflowError,
+  ValidationError,
+  ApplicationError,
+} from "workflowai.common";
 
 interface ConfigSection {
   id: string;
@@ -28,18 +35,59 @@ interface YamlWorkflow {
 export class WorkflowBuilder {
   private yamlData: YamlWorkflow;
   private prompts: { [key: string]: PromptMetaData };
+  private logger: ReturnType<typeof createWorkflowLogger>;
 
   constructor(filePath: string) {
+    const workflowId = this.generateUniqueId();
+    this.logger = createWorkflowLogger(workflowId);
+
+    this.logger.debug(`Initializing WorkflowBuilder with file: ${filePath}`);
+
+    if (!fs.existsSync(filePath)) {
+      this.logger.error(`File not found: ${filePath}`);
+      throw new ApplicationError(`File not found: ${filePath}`);
+    }
+    if (!fs.lstatSync(filePath).isFile()) {
+      this.logger.error(`Not a file: ${filePath}`);
+      throw new ApplicationError(`Not a file: ${filePath}`);
+    }
+
     const fileContents = fs.readFileSync(filePath, "utf8");
+    this.logger.debug(`File contents loaded: ${filePath}`);
+
     this.yamlData = yaml.load(fileContents) as YamlWorkflow;
+
+    // Validate YAML content against schema before proceeding
+    this.validateAgainstSchema(this.yamlData);
+
     this.prompts = loadPrompts();
+    this.logger.debug(`Prompts loaded successfully`);
+  }
+
+  private validateAgainstSchema(data: any): void {
+    const ajv = new Ajv();
+    const validate = ajv.compile(schema);
+    const valid = validate(data);
+    if (!valid && validate.errors) {
+      const validationErrors = validate.errors
+        .map((error) => `${error.instancePath} ${error.message}`)
+        .join("; ");
+      this.logger.error("Schema validation errors:", validationErrors);
+      throw new ValidationError(validationErrors);
+    } else if (!valid) {
+      this.logger.error(
+        "Schema validation failed, but no errors provided by Ajv.",
+      );
+      throw new ValidationError(
+        "Schema validation failed with an unknown error.",
+      );
+    }
+    this.logger.debug(`YAML content validated against schema successfully`);
   }
 
   public buildWorkflow(): IWorkflow {
     const nodes: INode[] = [];
     const connections: IConnectionDetails[] = [];
-
-    const uniqueId = () => "_" + Math.random().toString(36).substr(2, 9);
 
     this.yamlData.tasks.forEach((task) => {
       const node: INode = {
@@ -50,25 +98,53 @@ export class WorkflowBuilder {
         parameters: task.config,
       };
 
-      // Set the correct node type based on the task type in the YAML
+      this.logger.debug(`Processing task: ${task.id} of type: ${task.type}`);
+
       switch (task.type) {
-        case "fileRead":
+        case "read_file":
           node.type = "fileRead";
           break;
-        case "fileWrite":
+        case "write_file":
           node.type = "fileWrite";
           break;
-        default:
-          if (this.prompts[task.type]) {
-            const prompt = this.prompts[task.type];
-            node.type = "openaiTool"; // Assuming this is the type for OpenAI nodes
-            node.parameters.prompt = interpolatePrompt(
-              prompt.content,
-              task.config,
-            );
+        case "ai_agent":
+          node.type = "LLMClusterNode";
+          const promptId = task.config.promptId;
+          this.logger.debug(
+            `Processing task: ${task.id} with promptId: ${promptId}`,
+          );
+
+          if (promptId) {
+            const prompt = this.prompts[promptId];
+            if (prompt) {
+              node.type = "openaiTool";
+              node.parameters.prompt = interpolatePrompt(
+                prompt.content,
+                task.config,
+              );
+              this.logger.debug(`Prompt interpolated for task: ${task.id}`);
+            } else {
+              this.logger.error(
+                `Unknown promptId ${promptId} for task: ${task.id}`,
+              );
+              throw new WorkflowError(`Unknown promptId: ${promptId}`);
+            }
           } else {
-            throw new Error(`Unknown task type: ${task.type}`);
+            this.logger.error(
+              `Missing promptId in configuration for task: ${task.id}`,
+            );
+            throw new WorkflowError(
+              `Missing promptId in configuration for task: ${task.id}`,
+            );
           }
+          break;
+        case "search_request":
+          // Handle search_request type
+          node.type = "searchRequest";
+          break;
+        default:
+          this.logger.error(`Unknown task type: ${task.type}`);
+          throw new WorkflowError(`Unknown task type: ${task.type}`);
       }
 
       nodes.push(node);
@@ -90,8 +166,11 @@ export class WorkflowBuilder {
       connections.every((conn) => conn.sourceNodeId !== node.id),
     )?.id;
 
+    this.logger.debug(`Start Node ID: ${startNodeId}`);
+    this.logger.debug(`End Node ID: ${endNodeId}`);
+
     return {
-      id: uniqueId(),
+      id: this.generateUniqueId(),
       name: "auto-generated-workflow",
       nodes: nodes,
       connections: {
@@ -128,5 +207,9 @@ export class WorkflowBuilder {
       },
       {} as { [key: string]: IConnectionDetails[] },
     );
+  }
+
+  private generateUniqueId() {
+    return "_" + Math.random().toString(36).substr(2, 9);
   }
 }

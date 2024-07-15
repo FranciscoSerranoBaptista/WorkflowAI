@@ -1,19 +1,13 @@
-import type { PromptMetaData } from "workflowai.common";
-import { join, extname } from "path";
 import fs from "fs";
+import { join, extname } from "path";
 import yaml from "js-yaml";
 import { createWorkflowLogger, getCurrentLogger } from "workflowai.common";
+import type { PromptMetaData } from "workflowai.common";
 
-let logger = createWorkflowLogger("default-logger");
+const logger = getCurrentLogger();
 
 export function loadPrompts(): { [key: string]: PromptMetaData } {
-  try {
-    logger = getCurrentLogger();
-  } catch {
-    logger = createWorkflowLogger("prompt-loader"); // Fallback
-  }
-
-  const promptsDir = join(__dirname, "../../core/prompts"); // Adjust path as needed
+  const promptsDir = join(__dirname, "../../prompts"); // Adjust path as needed
   logger.debug(`Loading prompts from directory: ${promptsDir}`);
 
   const promptFiles = fs.readdirSync(promptsDir);
@@ -50,12 +44,6 @@ export function loadPrompts(): { [key: string]: PromptMetaData } {
 }
 
 export function parsePrompt(content: string): PromptMetaData {
-  try {
-    logger = getCurrentLogger();
-  } catch {
-    logger = createWorkflowLogger("prompt-loader"); // Fallback
-  }
-
   const metadataSection = content.split("---")[1].trim();
   logger.debug(`Extracted metadata section: ${metadataSection}`);
 

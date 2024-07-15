@@ -1,0 +1,7 @@
+---
+id: copywriting_draft_newsletter_content
+description: Draft the contents for a newsletter
+temperature: 1
+maxTokens: 2048
+---
+draft the contents for a newsletter.

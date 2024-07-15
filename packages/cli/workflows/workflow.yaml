@@ -3,46 +3,49 @@ settings:
   retryOnFailure: true
 
 tasks:
-  - id: readInputNode
-    type: fileRead
+  - id: readInput
+    type: file_read
     config:
       filePath: "input/input.txt"
 
-  - id: identifyPersonasNode
-    type: openaiTool
+  - id: identifyPersonas
+    type: ai_request
     dependencies:
       - readInputNode
     config:
-      provider: openai
+      llmConfig:
+        model: "text-davinci-003"
+        temperature: 0.7
+        maxTokens: 150
+        provider: openai
       promptId: business_identify_personas
-      model: "text-davinci-003"
-      temperature: 0.7
-      maxTokens: 150
 
-  - id: bestYearEverNode
-    type: openaiTool
+  - id: bestYearEver
+    type: ai_request
     dependencies:
       - identifyPersonasNode
     config:
-      provider: openai
+      llmConfig:
+        model: "text-davinci-003"
+        temperature: 0.7
+        maxTokens: 150
+        provider: openai
       promptId: business_persona_best_year_ever
-      model: "text-davinci-003"
-      temperature: 0.7
-      maxTokens: 150
 
   - id: createPitchNode
-    type: openaiTool
+    type: ai_request
     dependencies:
       - bestYearEverNode
     config:
-      provider: openai
-      promptId: business_pitch
-      model: "text-davinci-003"
-      temperature: 0.7
-      maxTokens: 150
+      llmConfig:
+        provider: openai
+        model: "text-davinci-003"
+        temperature: 0.7
+        maxTokens: 150
+      promptId: business_create_pitch
 
-  - id: writeOutputNode
-    type: fileWrite
+  - id: writeOutput
+    type: write_file
     dependencies:
       - createPitchNode
     config:
