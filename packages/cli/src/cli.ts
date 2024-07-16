@@ -1,9 +1,11 @@
 import { Command } from "commander";
+import dotenv from "dotenv";
+import path from "path";
+import { getLogger } from "workflowai.common";
 import { nodeRegistry } from "workflowai.nodes";
 import { WorkflowEngine } from "workflowai.workflow";
 import { loadPrompts } from "./utils";
 import { WorkflowBuilder } from "./WorkflowBuilder";
-import { getLogger } from "workflowai.common";
 
 const program = new Command();
 const logger = getLogger();
@@ -15,8 +17,21 @@ program
 program
   .command("execute <file>")
   .description("Execute the given workflow described in the YAML file")
-  .action(async (file) => {
+  .option("-d, --base-dir <path>", "Set the base directory for file operations")
+  .action(async (file, options) => {
     try {
+      // Load environment variables
+      dotenv.config();
+
+      // Set the WORKFLOW_BASE_DIR
+      if (options.baseDir) {
+        process.env.WORKFLOW_BASE_DIR = path.resolve(options.baseDir);
+      } else if (!process.env.WORKFLOW_BASE_DIR) {
+        process.env.WORKFLOW_BASE_DIR = path.resolve("./");
+      }
+
+      logger.info(`Using base directory: ${process.env.WORKFLOW_BASE_DIR}`);
+
       // Parse and build the workflow
       const builder = new WorkflowBuilder(file);
       const workflow = builder.buildWorkflow();

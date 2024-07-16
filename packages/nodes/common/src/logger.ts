@@ -1,21 +1,16 @@
 import { createLogger, format, transports } from "winston";
 import chalk from "chalk";
-import path from "path";
-import dotenv from "dotenv";
 import fs from "fs";
-
-// Load environment variables
-dotenv.config();
+import path from "path";
 
 // Singleton pattern for logger instance
 let loggerInstance: ReturnType<typeof createLogger> | null = null;
 
-// Get log directory from .env, default to 'logs' if not set
-const LOG_DIR = process.env.LOG_DIR || "logs";
+const logDir = path.join(__dirname, "../logs"); // Adjust the path as needed
 
 // Ensure log directory exists
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
 }
 
 /**
@@ -69,7 +64,12 @@ export function getLogger(
     !loggerInstance.transports.some((t) => t instanceof transports.File)
   ) {
     loggerInstance.add(
-      new transports.File({ filename: `workflow_${workflowId}.log` }),
+      new transports.File({
+        filename: path.join(logDir, `workflow_${workflowId}.log`),
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+        tailable: true,
+      }),
     );
   }
 

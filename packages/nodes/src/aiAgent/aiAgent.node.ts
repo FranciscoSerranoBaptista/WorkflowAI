@@ -14,7 +14,7 @@ const prompts = loadPrompts(); // Load prompts once and reuse
 export class AiAgentNode implements INodeType {
   description: INodeTypeDescription = {
     displayName: "AI Agent",
-    name: "aiAgent",
+    name: "ai_agent",
     group: ["transform"],
     version: 1,
     description: "Executes a conversational AI agent",
@@ -126,7 +126,7 @@ export class AiAgentNode implements INodeType {
             return {
               id: nodeId,
               name: nodeId,
-              type: "aiAgent",
+              type: "ai_agent",
               typeVersion: 1,
               parameters: this.getNodeParameter(
                 "parameters",

@@ -3,8 +3,8 @@ import { AiAgentNode } from "./aiAgent/aiAgent.node";
 import { NoOpNode } from "./NoOp/NoOp.node";
 
 export const nodeRegistry = {
-  fileReadWrite: new FileReadWriteNode(),
-  aiAgent: new AiAgentNode(),
+  read_write_file: new FileReadWriteNode(),
+  ai_agent: new AiAgentNode(),
   noop: new NoOpNode(),
   // Add other nodes here...
 };

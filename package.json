@@ -19,21 +19,25 @@
     ]
   },
   "scripts": {
-    "clean": "rm -f bun.lockb",
+    "clean": "rm -f bun.lockb && bun run clean-logs",
     "build:cli": "bun run tsc -p packages/cli/tsconfig.json",
     "build:workflow": "bun run tsc -p packages/workflow/tsconfig.json",
     "build:nodes": "bun run tsc -p packages/nodes/tsconfig.json",
     "build": "bun run build:nodes && bun run build:workflow && bun run build:cli",
     "run:cli": "bun run packages/cli/src/cli.ts execute packages/cli/workflows/workflow.yaml",
-    "test": "bun test"
+    "test": "bun test",
+    "clean-logs": "bun run scripts/clean-logs.ts"
   },
   "dependencies": {
+    "@jest/globals": "^29.7.0",
     "@sentry/node": "^8.17.0",
+    "@types/jest": "^29.5.12",
     "@types/js-yaml": "^4.0.9",
     "ajv": "^8.17.1",
     "axios": "^1.7.2",
     "callsites": "^4.2.0",
     "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
     "js-yaml": "^4.1.0",
     "openai": "^4.52.7",
     "winston": "^3.13.1"

@@ -19,11 +19,16 @@
           "id": { "type": "string" },
           "type": {
             "type": "string",
-            "enum": ["read_file", "write_file", "ai_request", "search_request"]
+            "enum": ["read_write_file", "ai_agent"]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string" }
           },
           "config": {
             "type": "object",
             "properties": {
+              "operation": { "type": "string" },
               "filePath": { "type": "string" },
               "llmConfig": {
                 "type": "object",
@@ -31,29 +36,32 @@
                   "model": { "type": "string" },
                   "temperature": { "type": "number" },
                   "maxTokens": { "type": "integer" },
-                  "provider": { "type": "string" },
-                  "prompt": { "type": "string" }
+                  "provider": { "type": "string" }
                 },
-                "required": ["model", "provider", "prompt"]
+                "required": ["model", "provider"]
               },
               "promptId": { "type": "string" }
-            },
-            "anyOf": [
-              { "required": ["filePath"] },
-              { "required": ["llmConfig", "promptId"] }
-            ]
-          },
-          "dependencies": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "retryOnFail": { "type": "boolean" },
-          "executeOnce": { "type": "boolean" },
-          "onError": { "type": "string", "enum": ["stop", "continue"] },
-          "continueOnFail": { "type": "boolean" },
-          "credentials": { "type": "object" }
+            }
+          }
         },
-        "required": ["id", "type", "config"]
+        "required": ["id", "type", "config"],
+        "if": {
+          "properties": { "type": { "const": "read_write_file" } }
+        },
+        "then": {
+          "properties": {
+            "config": {
+              "required": ["operation", "filePath"]
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "config": {
+              "required": ["llmConfig", "promptId"]
+            }
+          }
+        }
       }
     }
   },

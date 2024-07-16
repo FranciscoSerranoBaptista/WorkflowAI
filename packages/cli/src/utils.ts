@@ -7,7 +7,7 @@ import { getLogger } from "workflowai.common";
 let logger = getLogger();
 
 export function loadPrompts(): { [key: string]: PromptMetaData } {
-  const promptsDir = join(__dirname, "../../core/prompts"); // Adjust path as needed
+  const promptsDir = join(__dirname, "../../nodes/prompts"); // Adjust path as needed
   logger.debug(`Loading prompts from directory: ${promptsDir}`);
 
   const promptFiles = fs.readdirSync(promptsDir);

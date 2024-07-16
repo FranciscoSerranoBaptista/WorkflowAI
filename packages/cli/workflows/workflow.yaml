@@ -4,14 +4,15 @@ settings:
 
 tasks:
   - id: readInput
-    type: file_read
+    type: read_write_file
     config:
-      filePath: "input/input.txt"
+      operation: read
+      filePath: "input.txt"
 
   - id: identifyPersonas
-    type: ai_request
+    type: ai_agent
     dependencies:
-      - readInputNode
+      - readInput
     config:
       llmConfig:
         model: "text-davinci-003"
@@ -21,9 +22,9 @@ tasks:
       promptId: business_identify_personas
 
   - id: bestYearEver
-    type: ai_request
+    type: ai_agent
     dependencies:
-      - identifyPersonasNode
+      - identifyPersonas
     config:
       llmConfig:
         model: "text-davinci-003"
@@ -33,9 +34,10 @@ tasks:
       promptId: business_persona_best_year_ever
 
   - id: createPitchNode
-    type: ai_request
+    type: ai_agent
     dependencies:
-      - bestYearEverNode
+      - identifyPersonas
+      - bestYearEver
     config:
       llmConfig:
         provider: openai
@@ -45,8 +47,9 @@ tasks:
       promptId: business_create_pitch
 
   - id: writeOutput
-    type: write_file
+    type: read_write_file
     dependencies:
       - createPitchNode
     config:
-      filePath: "output/output.txt"
+      operation: write
+      filePath: "output.txt"

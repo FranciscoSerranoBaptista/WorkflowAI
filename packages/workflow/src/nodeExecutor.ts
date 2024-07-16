@@ -1,19 +1,12 @@
+import type { Logger } from "winston";
 import type {
-  INodeType,
+  IExecuteFunctions,
   INode,
   INodeExecutionData,
+  INodeType,
   INodeTypes,
-  IExecuteFunctions,
 } from "workflowai.common";
-import type { Logger } from "winston";
-
-interface NodeExecutionOptions {
-  maxRetries: number;
-  retryOnFail: boolean;
-  retryDelay: number;
-  maxTries: number;
-  waitBetweenRetries: number;
-}
+import { ApplicationError, WorkflowError } from "workflowai.common";
 
 export class NodeExecutor {
   private nodeTypesRegistry: INodeTypes;
@@ -37,6 +30,9 @@ export class NodeExecutor {
     this.logger.info(`Executing node ${node.id} of type ${node.type}`);
 
     const maxTries = nodeType.maxTries || 1;
+    const retryOnFail = node.retryOnFail ?? nodeType.retryOnFail ?? false;
+    const waitBetweenRetries =
+      node.waitBetweenRetries ?? nodeType.waitBetweenRetries ?? 1000;
 
     for (let trial = 0; trial < maxTries; trial++) {
       try {
@@ -44,31 +40,64 @@ export class NodeExecutor {
         const context = {
           ...executeFunctions,
           getInputData: () => inputData,
+          getNodeParameter: (
+            name: string,
+            index: number,
+            defaultValue?: any,
+          ) => {
+            return node.parameters[name] ?? defaultValue;
+          },
         };
 
         const outputData = await nodeType.execute.call(context);
+
+        // Check if the output contains an error
+        const hasError = outputData.some(
+          (item) => item.json && item.json.error,
+        );
+        if (hasError) {
+          const errorMessage = outputData.find(
+            (item) => item.json && item.json.error,
+          )?.json.error;
+          throw new WorkflowError(`Node execution failed: ${errorMessage}`, {
+            tags: { nodeId: node.id, nodeType: node.type },
+          });
+        }
+
         return outputData;
       } catch (error) {
-        if (nodeType.retryOnFail && trial < (nodeType.maxTries || 1) - 1) {
+        if (retryOnFail && trial < maxTries - 1) {
           this.logger.warn(
-            `Execution error on node ${node.id}, retrying... (${trial + 1}/${nodeType.maxTries})`,
+            `Execution error on node ${node.id}, retrying... (${trial + 1}/${maxTries})`,
           );
-          if (nodeType.waitBetweenRetries) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, nodeType.waitBetweenRetries),
-            );
-          }
+          await new Promise((resolve) =>
+            setTimeout(resolve, waitBetweenRetries),
+          );
         } else {
           const errorMessage =
             error instanceof Error ? error.message : "Unknown error";
           this.logger.error(
             `Execution error on node ${node.id}: ${errorMessage}`,
           );
-          throw error;
+
+          if (node.continueOnFail) {
+            this.logger.warn(
+              `Node ${node.id} failed, but continuing due to continueOnFail setting`,
+            );
+            return [{ json: { error: errorMessage } }];
+          } else {
+            throw error instanceof ApplicationError
+              ? error
+              : new WorkflowError(errorMessage, {
+                  tags: { nodeId: node.id, nodeType: node.type },
+                });
+          }
         }
       }
     }
 
-    throw new Error(`All retry attempts failed for node ${node.id}`);
+    throw new WorkflowError(`All retry attempts failed for node ${node.id}`, {
+      tags: { nodeId: node.id, nodeType: node.type },
+    });
   }
 }
