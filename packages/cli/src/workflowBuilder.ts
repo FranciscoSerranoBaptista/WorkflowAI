@@ -1,14 +1,13 @@
 import Ajv from "ajv";
 import fs from "fs";
 import yaml from "js-yaml";
-import { createWorkflowLogger } from "workflowai.common";
+import { getLogger } from "workflowai.common";
 import type {
   IConnectionDetails,
   INode,
   IWorkflow,
   PromptMetaData,
 } from "workflowai.common";
-import { interpolatePrompt } from "workflowai.workflow";
 import schema from "../schema/workflow.schema.json";
 import { loadPrompts } from "./utils";
 import {
@@ -35,11 +34,11 @@ interface YamlWorkflow {
 export class WorkflowBuilder {
   private yamlData: YamlWorkflow;
   private prompts: { [key: string]: PromptMetaData };
-  private logger: ReturnType<typeof createWorkflowLogger>;
+  private logger: ReturnType<typeof getLogger>;
 
   constructor(filePath: string) {
     const workflowId = this.generateUniqueId();
-    this.logger = createWorkflowLogger(workflowId);
+    this.logger = getLogger(workflowId);
 
     this.logger.debug(`Initializing WorkflowBuilder with file: ${filePath}`);
 
@@ -117,12 +116,10 @@ export class WorkflowBuilder {
           if (promptId) {
             const prompt = this.prompts[promptId];
             if (prompt) {
-              node.type = "openaiTool";
-              node.parameters.prompt = interpolatePrompt(
-                prompt.content,
-                task.config,
-              );
-              this.logger.debug(`Prompt interpolated for task: ${task.id}`);
+              // Instead of interpolating here, we'll just store the promptId
+              node.parameters.promptId = promptId;
+              // We'll also store the original prompt content for later use
+              node.parameters.promptTemplate = prompt.content;
             } else {
               this.logger.error(
                 `Unknown promptId ${promptId} for task: ${task.id}`,

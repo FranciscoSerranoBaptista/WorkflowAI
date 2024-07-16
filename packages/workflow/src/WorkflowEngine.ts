@@ -8,15 +8,15 @@ import type {
   IWorkflow,
   PromptMetaData,
 } from "workflowai.common";
-import { createWorkflowLogger } from "workflowai.common";
 import { nodeRegistry } from "workflowai.nodes";
-import { WorkflowValidator } from "./workflowValidator";
-import { NodeExecutor } from "./nodeExecutor";
+import { getLogger } from "workflowai.common";
+import { WorkflowValidator } from "./WorkflowValidator";
+import { NodeExecutor } from "./NodeExecutor";
 
 export class WorkflowEngine implements IExecuteFunctions {
   private nodeTypesRegistry: INodeTypes;
   private workflow: IWorkflow;
-  private logger: ReturnType<typeof createWorkflowLogger>;
+  private logger: ReturnType<typeof getLogger>;
   public nodeOutputs: { [nodeId: string]: INodeExecutionData[] } = {};
   private validator: WorkflowValidator;
   private executor: NodeExecutor;
@@ -25,7 +25,7 @@ export class WorkflowEngine implements IExecuteFunctions {
   constructor(nodeTypesRegistry: INodeTypes = nodeRegistry) {
     this.nodeTypesRegistry = nodeTypesRegistry;
     this.workflow = this.initializeEmptyWorkflow();
-    this.logger = createWorkflowLogger("workflow");
+    this.logger = getLogger();
     this.validator = new WorkflowValidator(this.workflow, this.logger);
     this.executor = new NodeExecutor(this.nodeTypesRegistry, this.logger);
   }
@@ -46,7 +46,7 @@ export class WorkflowEngine implements IExecuteFunctions {
 
   setWorkflow(workflow: IWorkflow): void {
     this.workflow = workflow;
-    this.logger = createWorkflowLogger(this.workflow.id);
+    this.logger = getLogger(this.workflow.id);
     this.validator.setWorkflow(this.workflow);
   }
 
@@ -265,6 +265,10 @@ export class WorkflowEngine implements IExecuteFunctions {
 
     this.currentNodeId = null;
     return this.nodeOutputs;
+  }
+
+  getNodeOutput(nodeId: string): any {
+    return this.nodeOutputs[nodeId];
   }
 
   getInputDataForNode(

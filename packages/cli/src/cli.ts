@@ -2,9 +2,11 @@ import { Command } from "commander";
 import { nodeRegistry } from "workflowai.nodes";
 import { WorkflowEngine } from "workflowai.workflow";
 import { loadPrompts } from "./utils";
-import { WorkflowBuilder } from "./workflowBuilder";
+import { WorkflowBuilder } from "./WorkflowBuilder";
+import { getLogger } from "workflowai.common";
 
 const program = new Command();
+const logger = getLogger();
 
 program
   .version("1.0.0")

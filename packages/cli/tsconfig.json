@@ -10,7 +10,7 @@
     "paths": {
       "workflowai.workflow": ["../core/src"]
     },
-    "types": ["node", "js-yaml"],
+    "types": ["node", "js-yaml", "bun-types"],
 
     // Bundler mode
     "moduleResolution": "bundler",

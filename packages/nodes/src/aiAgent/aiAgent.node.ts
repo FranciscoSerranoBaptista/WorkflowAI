@@ -1,12 +1,13 @@
 import type {
+  IDataObject,
   IExecuteFunctions,
   INodeExecutionData,
   INodeType,
-  INodeTypeDescription,
   INode,
+  INodeTypeDescription,
 } from "workflowai.common";
+import { interpolatePrompt, loadPrompts } from "../utils/prompts";
 import { orchestrateAIAgent } from "./aiAgentOrchestrator";
-import { loadPrompts } from "../helpers/prompts";
 
 const prompts = loadPrompts(); // Load prompts once and reuse
 
@@ -72,10 +73,9 @@ export class AiAgentNode implements INodeType {
     const returnData: INodeExecutionData[] = [];
 
     for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-      const nodeId = this.getNodeParameter("nodeId", itemIndex) as string;
+      const nodeId = this.getNodeParameter("id", itemIndex) as string;
       const model = this.getNodeParameter("model", itemIndex) as string;
       const provider = this.getNodeParameter("provider", itemIndex) as string;
-      const prompt = this.getNodeParameter("prompt", itemIndex) as string;
       const maxTokens = this.getNodeParameter(
         "maxTokens",
         itemIndex,
@@ -86,35 +86,71 @@ export class AiAgentNode implements INodeType {
         itemIndex,
         0.7,
       ) as number;
+      const promptId = this.getNodeParameter("promptId", itemIndex) as string;
+      const promptTemplate = this.getNodeParameter(
+        "promptTemplate",
+        itemIndex,
+      ) as string;
 
       try {
-        // Directly create the node based on parameters
-        const currentNode: INode = {
-          id: nodeId,
-          name: "aiAgent",
-          type: "aiAgent",
-          typeVersion: 1,
-          parameters: {
-            model,
-            provider,
-            prompt,
-            maxTokens,
-            temperature,
-          },
+        // Get the prompt template
+        const promptTemplate = prompts[promptId]?.content;
+        if (!promptTemplate) {
+          throw new Error(
+            `Prompt template not found for promptId: ${promptId}`,
+          );
+        }
+
+        // Prepare variables for interpolation
+        const variables: { [key: string]: string } = {};
+        items.forEach((item, index) => {
+          Object.entries(item.json).forEach(([key, value]) => {
+            variables[`${key}_${index}`] = String(value);
+          });
+        });
+
+        // Interpolate prompt
+        const interpolatedPrompt = interpolatePrompt(promptTemplate, variables);
+
+        const config = {
+          model,
+          provider,
+          prompt: interpolatedPrompt,
+          maxTokens,
+          temperature,
+        };
+
+        // Create a mock getNode function that returns a complete INode object
+        const getNode = (id: string): INode | undefined => {
+          if (id === nodeId) {
+            return {
+              id: nodeId,
+              name: nodeId,
+              type: "aiAgent",
+              typeVersion: 1,
+              parameters: this.getNodeParameter(
+                "parameters",
+                itemIndex,
+              ) as IDataObject,
+            };
+          }
+          return undefined;
         };
 
         // Orchestrate AI agent execution
-        await orchestrateAIAgent(nodeId, () => currentNode, prompts, {
-          model,
-          provider,
-          prompt,
-          maxTokens,
-          temperature,
-        });
+        const result = await orchestrateAIAgent(
+          nodeId,
+          getNode,
+          prompts,
+          config,
+        );
 
-        // Assume some output based on AI execution
-        const output = {
-          json: { status: "success", data: {} /* AI result data here */ },
+        // The result should now contain the AI call output
+        const output: INodeExecutionData = {
+          json: {
+            status: "success",
+            data: result,
+          },
         };
         returnData.push(output);
       } catch (error) {

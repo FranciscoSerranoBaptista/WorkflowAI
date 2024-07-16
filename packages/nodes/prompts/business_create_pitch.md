@@ -7,7 +7,17 @@ You will be creating a pitch for a community or business based on the informatio
 Your task is to create a pitch following a specific formula described in the transcript. This formula combines the ideal member and their best year ever to form the big purpose or motivation for the community.
 
 The pitch formula is as follows:
-"I" or "We" bring together [ideal member description] so that we can [best year ever description]
+"I" or "We" bring together:
+
+<avatar_description>
+{{business_identify_personas}}
+</avatar_description>
+
+so that we can:
+
+<best_year_ever>
+{{business_perona_best_year_ever}}
+</best_year_ever>
 
 To create this pitch:
 

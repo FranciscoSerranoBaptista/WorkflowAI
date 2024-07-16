@@ -27,18 +27,22 @@ async function orchestrateAIAgent(
     throw new Error(`Node ${nodeId} not found in workflow`);
   }
 
-  node.parameters = {
-    ...node.parameters,
-    llmConfig: {
-      model: config.model,
-      provider: config.provider,
-      prompt: config.prompt,
-      maxTokens: config.maxTokens,
-      temperature: config.temperature,
-    } as ILLMConfig,
+  const llmConfig = {
+    model: config.model,
+    provider: config.provider,
+    prompt: config.prompt,
+    maxTokens: config.maxTokens,
+    temperature: config.temperature,
   };
 
-  await aiCall(nodeId, getNode);
+  node.parameters = {
+    ...node.parameters,
+    llmConfig,
+  };
+
+  const result = await aiCall(nodeId, () => node);
+
+  return result;
 }
 
 export { orchestrateAIAgent };

@@ -21,7 +21,7 @@ export async function aiCall(
     throw new Error(`Node ${nodeId} not found`);
   }
 
-  const { provider, model, prompt, maxTokens, temperature, messages } =
+  const { provider, model, prompt, maxTokens, temperature } =
     node.parameters.llmConfig;
 
   if (provider.toLowerCase() !== "openai") {
@@ -48,10 +48,9 @@ export async function aiCall(
       },
     );
 
-    // Simulate storing or processing the response
     console.log(`Response from OpenAI: `, response.data);
 
-    node.parameters.llmConfig.output = response.data;
+    return response.data;
   } catch (error) {
     console.error(`Error during OpenAI API call: `, error);
 
