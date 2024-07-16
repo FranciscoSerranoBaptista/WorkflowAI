@@ -14,7 +14,7 @@ const prompts = loadPrompts(); // Load prompts once and reuse
 export class AiAgentNode implements INodeType {
   description: INodeTypeDescription = {
     displayName: "AI Agent",
-    name: "ai_agent",
+    name: "ai_Agent",
     group: ["transform"],
     version: 1,
     description: "Executes a conversational AI agent",
@@ -87,10 +87,6 @@ export class AiAgentNode implements INodeType {
         0.7,
       ) as number;
       const promptId = this.getNodeParameter("promptId", itemIndex) as string;
-      const promptTemplate = this.getNodeParameter(
-        "promptTemplate",
-        itemIndex,
-      ) as string;
 
       try {
         // Get the prompt template
@@ -103,11 +99,11 @@ export class AiAgentNode implements INodeType {
 
         // Prepare variables for interpolation
         const variables: { [key: string]: string } = {};
-        items.forEach((item, index) => {
-          Object.entries(item.json).forEach(([key, value]) => {
-            variables[`${key}_${index}`] = String(value);
-          });
-        });
+        for (const item of items) {
+          for (const [nodeId, data] of Object.entries(item.json)) {
+            variables[nodeId] = JSON.stringify(data);
+          }
+        }
 
         // Interpolate prompt
         const interpolatedPrompt = interpolatePrompt(promptTemplate, variables);
@@ -120,13 +116,13 @@ export class AiAgentNode implements INodeType {
           temperature,
         };
 
-        // Create a mock getNode function that returns a complete INode object
+        // Create a getNode function that returns a complete INode object
         const getNode = (id: string): INode | undefined => {
           if (id === nodeId) {
             return {
               id: nodeId,
               name: nodeId,
-              type: "ai_agent",
+              type: "aiAgent",
               typeVersion: 1,
               parameters: this.getNodeParameter(
                 "parameters",
@@ -145,16 +141,25 @@ export class AiAgentNode implements INodeType {
           config,
         );
 
-        // The result should now contain the AI call output
+        // Wrap the result with the node ID
         const output: INodeExecutionData = {
           json: {
-            status: "success",
-            data: result,
+            [nodeId]: {
+              status: "success",
+              data: result,
+            },
           },
         };
         returnData.push(output);
       } catch (error) {
-        returnData.push({ json: { error: (error as Error).message } });
+        returnData.push({
+          json: {
+            [nodeId]: {
+              status: "error",
+              error: (error as Error).message,
+            },
+          },
+        });
       }
     }
 

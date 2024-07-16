@@ -39,7 +39,7 @@ export class NodeExecutor {
         // Create a custom context that combines the executeFunctions with the current inputData
         const context = {
           ...executeFunctions,
-          getInputData: () => inputData,
+          getInputData: () => this.prepareInputData(node.id, inputData),
           getNodeParameter: (
             name: string,
             index: number,
@@ -64,7 +64,8 @@ export class NodeExecutor {
           });
         }
 
-        return outputData;
+        // Wrap the output data with the node ID
+        return this.wrapOutputData(node.id, outputData);
       } catch (error) {
         if (retryOnFail && trial < maxTries - 1) {
           this.logger.warn(
@@ -84,7 +85,9 @@ export class NodeExecutor {
             this.logger.warn(
               `Node ${node.id} failed, but continuing due to continueOnFail setting`,
             );
-            return [{ json: { error: errorMessage } }];
+            return this.wrapOutputData(node.id, [
+              { json: { error: errorMessage } },
+            ]);
           } else {
             throw error instanceof ApplicationError
               ? error
@@ -99,5 +102,32 @@ export class NodeExecutor {
     throw new WorkflowError(`All retry attempts failed for node ${node.id}`, {
       tags: { nodeId: node.id, nodeType: node.type },
     });
+  }
+
+  private prepareInputData(
+    nodeId: string,
+    inputData: INodeExecutionData[],
+  ): INodeExecutionData[] {
+    // Prepare input data by ensuring each item has a 'source' property
+    return inputData.map((item) => ({
+      ...item,
+      json: {
+        ...item.json,
+        source: item.json.source || nodeId,
+      },
+    }));
+  }
+
+  private wrapOutputData(
+    nodeId: string,
+    outputData: INodeExecutionData[],
+  ): INodeExecutionData[] {
+    // Wrap output data with the node ID
+    return outputData.map((item) => ({
+      ...item,
+      json: {
+        [nodeId]: item.json,
+      },
+    }));
   }
 }
