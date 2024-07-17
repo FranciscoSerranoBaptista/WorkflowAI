@@ -88,6 +88,21 @@ export class AiAgentNode implements INodeType {
       ) as number;
       const promptId = this.getNodeParameter("promptId", itemIndex) as string;
 
+      // Assuming that the `node` information should be part of the parameters
+      const node: INode = {
+        id: nodeId,
+        name: nodeId,
+        type: "ai_agent",
+        typeVersion: 1,
+        parameters: {
+          model,
+          provider,
+          promptId,
+          maxTokens,
+          temperature,
+        },
+      };
+
       try {
         // Get the prompt template
         const promptTemplate = prompts[promptId]?.content;
@@ -99,9 +114,12 @@ export class AiAgentNode implements INodeType {
 
         // Prepare variables for interpolation
         const variables: { [key: string]: string } = {};
-        for (const item of items) {
-          for (const [nodeId, data] of Object.entries(item.json)) {
-            variables[nodeId] = JSON.stringify(data);
+        const item = items[itemIndex];
+        for (const [key, data] of Object.entries(item.json[nodeId].data)) {
+          if (typeof data === "object" && data !== null) {
+            variables[key] = JSON.stringify(data);
+          } else if (typeof data === "string") {
+            variables[key] = data;
           }
         }
 
@@ -116,30 +134,8 @@ export class AiAgentNode implements INodeType {
           temperature,
         };
 
-        // Create a getNode function that returns a complete INode object
-        const getNode = (id: string): INode | undefined => {
-          if (id === nodeId) {
-            return {
-              id: nodeId,
-              name: nodeId,
-              type: "aiAgent",
-              typeVersion: 1,
-              parameters: this.getNodeParameter(
-                "parameters",
-                itemIndex,
-              ) as IDataObject,
-            };
-          }
-          return undefined;
-        };
-
         // Orchestrate AI agent execution
-        const result = await orchestrateAIAgent(
-          nodeId,
-          getNode,
-          prompts,
-          config,
-        );
+        const result = await orchestrateAIAgent(node, prompts, config);
 
         // Wrap the result with the node ID
         const output: INodeExecutionData = {
@@ -147,6 +143,7 @@ export class AiAgentNode implements INodeType {
             [nodeId]: {
               status: "success",
               data: result,
+              source: nodeId,
             },
           },
         };
@@ -157,6 +154,7 @@ export class AiAgentNode implements INodeType {
             [nodeId]: {
               status: "error",
               error: (error as Error).message,
+              source: nodeId,
             },
           },
         });

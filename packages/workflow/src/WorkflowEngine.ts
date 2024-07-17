@@ -12,6 +12,7 @@ import { nodeRegistry } from "workflowai.nodes";
 import { getLogger } from "workflowai.common";
 import { WorkflowValidator } from "./WorkflowValidator";
 import { NodeExecutor } from "./NodeExecutor";
+import { createGetNodeFunction } from "./utils";
 
 export class WorkflowEngine implements IExecuteFunctions {
   private nodeTypesRegistry: INodeTypes;
@@ -27,7 +28,11 @@ export class WorkflowEngine implements IExecuteFunctions {
     this.workflow = this.initializeEmptyWorkflow();
     this.logger = getLogger();
     this.validator = new WorkflowValidator(this.workflow, this.logger);
-    this.executor = new NodeExecutor(this.nodeTypesRegistry, this.logger);
+    this.executor = new NodeExecutor(
+      this.nodeTypesRegistry,
+      this.logger,
+      this.getNode.bind(this),
+    );
   }
 
   private initializeEmptyWorkflow(): IWorkflow {
@@ -175,6 +180,10 @@ export class WorkflowEngine implements IExecuteFunctions {
 
   getNode(nodeId: string): INode | undefined {
     return this.workflow.nodes.find((node) => node.id === nodeId);
+  }
+
+  getGetNodeFunction() {
+    return createGetNodeFunction(this);
   }
 
   updateNode(nodeId: string, updates: Partial<INode>): void {

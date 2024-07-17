@@ -62,6 +62,11 @@ export class FileReadWriteNode implements INodeType {
     for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
       const operation = this.getNodeParameter("operation", itemIndex) as string;
       const filePath = this.getNodeParameter("filePath", itemIndex) as string;
+      const nodeId = this.getNodeParameter("id", itemIndex) as string;
+      const variableName = this.getNodeParameter(
+        "variableName",
+        itemIndex,
+      ) as string;
 
       // Use the environment variable to construct the full path
       const baseDir = process.env.WORKFLOW_BASE_DIR || ".";
@@ -69,30 +74,68 @@ export class FileReadWriteNode implements INodeType {
 
       if (operation === "read") {
         try {
-          const data = await fs.readFile(fullPath, "utf-8");
-          returnData.push({ json: { data } });
+          const rawData = await fs.readFile(fullPath, "utf-8");
+          const transformedData = {
+            [variableName]: rawData,
+          };
+
+          returnData.push({
+            json: {
+              [nodeId]: {
+                status: "success",
+                data: transformedData,
+                source: nodeId,
+              },
+            },
+          });
         } catch (error) {
-          throw new WorkflowError(
-            `Error reading file: ${(error as Error).message}`,
-            { tags: { operation, filePath: fullPath } },
-          );
+          returnData.push({
+            json: {
+              [nodeId]: {
+                status: "error",
+                error: (error as Error).message,
+                source: nodeId,
+              },
+            },
+          });
         }
       } else if (operation === "write") {
-        const fileContent = this.getNodeParameter(
-          "fileContent",
-          itemIndex,
-        ) as string;
+        // Concatenate content from dependencies
+        let fileContent = "";
+        items.forEach((item) => {
+          const sourceNodeId = item.json.source;
+          const content = item.json[sourceNodeId]?.data;
+          if (content) {
+            fileContent += content + "\n"; // Concatenate with newline
+          }
+        });
+
         try {
           await fs.writeFile(fullPath, fileContent, "utf-8");
-          returnData.push({ json: { status: "success" } });
+          returnData.push({
+            json: { [nodeId]: { status: "success", source: nodeId } },
+          });
         } catch (error) {
-          throw new WorkflowError(
-            `Error writing file: ${(error as Error).message}`,
-            { tags: { operation, filePath: fullPath } },
-          );
+          returnData.push({
+            json: {
+              [nodeId]: {
+                status: "error",
+                error: (error as Error).message,
+                source: nodeId,
+              },
+            },
+          });
         }
       } else {
-        throw new WorkflowError("Invalid operation", { tags: { operation } });
+        returnData.push({
+          json: {
+            [nodeId]: {
+              status: "error",
+              error: "Invalid operation",
+              source: nodeId,
+            },
+          },
+        });
       }
     }
 

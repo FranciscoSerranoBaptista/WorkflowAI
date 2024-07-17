@@ -1,18 +1,9 @@
-import { readFile } from "fs/promises";
-import { join } from "path";
-import type {
-  INode,
-  INodeTypes,
-  PromptMetaData,
-  ILLMConfig,
-} from "workflowai.common";
-import { nodeRegistry } from "../nodeRegistry";
+import type { INode, PromptMetaData } from "workflowai.common";
 
 import { aiCall } from "./aiCall";
 
 async function orchestrateAIAgent(
-  nodeId: string,
-  getNode: (nodeId: string) => INode | undefined,
+  node: INode,
   prompts: { [key: string]: PromptMetaData },
   config: {
     model: string;
@@ -22,11 +13,6 @@ async function orchestrateAIAgent(
     temperature: number;
   },
 ): Promise<void> {
-  const node = getNode(nodeId);
-  if (!node) {
-    throw new Error(`Node ${nodeId} not found in workflow`);
-  }
-
   const llmConfig = {
     model: config.model,
     provider: config.provider,
@@ -40,7 +26,7 @@ async function orchestrateAIAgent(
     llmConfig,
   };
 
-  const result = await aiCall(nodeId, () => node);
+  const result = await aiCall(node.id, () => node);
 
   return result;
 }

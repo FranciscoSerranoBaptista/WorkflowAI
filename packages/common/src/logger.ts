@@ -68,9 +68,8 @@ export function getLogger(
     workflowId &&
     !loggerInstance.transports.some((t) => t instanceof transports.File)
   ) {
-    loggerInstance.add(
-      new transports.File({ filename: `workflow_${workflowId}.log` }),
-    );
+    const logFilePath = path.join(LOG_DIR, `workflow_${workflowId}.log`);
+    loggerInstance.add(new transports.File({ filename: logFilePath }));
   }
 
   return loggerInstance;

@@ -30,6 +30,10 @@
             "properties": {
               "operation": { "type": "string" },
               "filePath": { "type": "string" },
+              "variableName": { "type": "string" },
+              "retryOnFail": { "type": "boolean" },
+              "continueOnFail": { "type": "boolean" },
+              "waitBetweenRetries": { "type": "integer" },
               "llmConfig": {
                 "type": "object",
                 "properties": {
@@ -51,7 +55,24 @@
         "then": {
           "properties": {
             "config": {
-              "required": ["operation", "filePath"]
+              "required": ["operation", "filePath"],
+              "dependencies": {
+                "operation": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "operation": { "const": "read" }
+                      },
+                      "required": ["variableName"]
+                    },
+                    {
+                      "properties": {
+                        "operation": { "const": "write" }
+                      }
+                    }
+                  ]
+                }
+              }
             }
           }
         },

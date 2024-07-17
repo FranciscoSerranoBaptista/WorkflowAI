@@ -11,10 +11,16 @@ import { ApplicationError, WorkflowError } from "workflowai.common";
 export class NodeExecutor {
   private nodeTypesRegistry: INodeTypes;
   private logger: Logger;
+  private getNode: (nodeId: string) => INode | undefined;
 
-  constructor(nodeTypesRegistry: INodeTypes, logger: Logger) {
+  constructor(
+    nodeTypesRegistry: INodeTypes,
+    logger: Logger,
+    getNode: (nodeId: string) => INode | undefined,
+  ) {
     this.nodeTypesRegistry = nodeTypesRegistry;
     this.logger = logger;
+    this.getNode = getNode;
   }
 
   async executeNode(
@@ -30,9 +36,12 @@ export class NodeExecutor {
     this.logger.info(`Executing node ${node.id} of type ${node.type}`);
 
     const maxTries = nodeType.maxTries || 1;
-    const retryOnFail = node.retryOnFail ?? nodeType.retryOnFail ?? false;
+    const retryOnFail =
+      node.parameters.retryOnFail ?? nodeType.retryOnFail ?? false;
+    const continueOnFail =
+      node.parameters.continueOnFail ?? nodeType.continueOnFail ?? false;
     const waitBetweenRetries =
-      node.waitBetweenRetries ?? nodeType.waitBetweenRetries ?? 1000;
+      node.parameters.waitBetweenRetries ?? nodeType.waitBetweenRetries ?? 1000;
 
     for (let trial = 0; trial < maxTries; trial++) {
       try {
@@ -53,19 +62,24 @@ export class NodeExecutor {
 
         // Check if the output contains an error
         const hasError = outputData.some(
-          (item) => item.json && item.json.error,
+          (item) => item.json && item.json[node.id]?.status === "error",
         );
         if (hasError) {
           const errorMessage = outputData.find(
-            (item) => item.json && item.json.error,
-          )?.json.error;
+            (item) => item.json && item.json[node.id]?.error,
+          )?.json[node.id]?.error;
           throw new WorkflowError(`Node execution failed: ${errorMessage}`, {
             tags: { nodeId: node.id, nodeType: node.type },
           });
         }
 
-        // Wrap the output data with the node ID
-        return this.wrapOutputData(node.id, outputData);
+        // Check if the output contains success
+        const hasSuccess = outputData.some(
+          (item) => item.json && item.json[node.id]?.status === "success",
+        );
+        if (hasSuccess) {
+          return this.wrapOutputData(node.id, outputData);
+        }
       } catch (error) {
         if (retryOnFail && trial < maxTries - 1) {
           this.logger.warn(
@@ -81,12 +95,20 @@ export class NodeExecutor {
             `Execution error on node ${node.id}: ${errorMessage}`,
           );
 
-          if (node.continueOnFail) {
+          if (continueOnFail) {
             this.logger.warn(
               `Node ${node.id} failed, but continuing due to continueOnFail setting`,
             );
             return this.wrapOutputData(node.id, [
-              { json: { error: errorMessage } },
+              {
+                json: {
+                  [node.id]: {
+                    status: "error",
+                    error: errorMessage,
+                    source: node.id,
+                  },
+                },
+              },
             ]);
           } else {
             throw error instanceof ApplicationError
@@ -108,7 +130,6 @@ export class NodeExecutor {
     nodeId: string,
     inputData: INodeExecutionData[],
   ): INodeExecutionData[] {
-    // Prepare input data by ensuring each item has a 'source' property
     return inputData.map((item) => ({
       ...item,
       json: {
@@ -122,11 +143,12 @@ export class NodeExecutor {
     nodeId: string,
     outputData: INodeExecutionData[],
   ): INodeExecutionData[] {
-    // Wrap output data with the node ID
+    // Wrap output data by merging with the node ID context
     return outputData.map((item) => ({
       ...item,
       json: {
-        [nodeId]: item.json,
+        ...item.json,
+        source: nodeId, // Ensure source is set
       },
     }));
   }

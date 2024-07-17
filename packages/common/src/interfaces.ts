@@ -100,6 +100,7 @@ export interface INodeTypeDescription {
 export interface IExecuteFunctions {
   getInputData: () => INodeExecutionData[];
   getNodeParameter: (name: string, index: number, defaultValue?: any) => any;
+  getWorkflow: () => IWorkflow;
 }
 
 /**
@@ -112,6 +113,7 @@ export interface INodeType {
   retryOnFail?: boolean;
   maxTries?: number;
   waitBetweenRetries?: number;
+  continueOnFail?: boolean;
 }
 
 // Extend INode to include input and output names

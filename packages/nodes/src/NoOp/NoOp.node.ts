@@ -23,11 +23,32 @@ export class NoOpNode implements INodeType {
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[]> {
     const items = this.getInputData();
+    const returnData: INodeExecutionData[] = [];
 
-    // Ensure each item has a `json` property
-    const returnData: INodeExecutionData[] = items.map((item) => ({
-      json: item.json,
-    }));
+    items.forEach((item, index) => {
+      const nodeId = this.getNodeParameter("id", index) as string;
+      try {
+        returnData.push({
+          json: {
+            [nodeId]: {
+              status: "success",
+              data: item.json,
+              source: nodeId,
+            },
+          },
+        });
+      } catch (error) {
+        returnData.push({
+          json: {
+            [nodeId]: {
+              status: "error",
+              error: (error as Error).message,
+              source: nodeId,
+            },
+          },
+        });
+      }
+    });
 
     return returnData;
   }
