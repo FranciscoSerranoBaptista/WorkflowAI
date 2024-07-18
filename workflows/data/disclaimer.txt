@@ -1,1 +1,1 @@
-We disclaim all facts and reasons.
+Disclaimer: The tool you are using incorporates machine learning models and may provide outputs that are approximations or predictions based on input data. The results should be used with caution and should not be considered as an absolute fact. Use this tool at your own risk.
