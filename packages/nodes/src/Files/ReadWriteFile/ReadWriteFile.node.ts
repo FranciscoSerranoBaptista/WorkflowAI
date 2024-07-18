@@ -4,9 +4,71 @@ import type {
   INodeType,
   INodeTypeDescription,
 } from "workflowai.common";
-import * as fs from "fs/promises";
+import fs from "fs";
 import * as path from "path";
 import { WorkflowError } from "workflowai.common";
+import { getLogger } from "workflowai.common";
+
+// Initialize logger
+const logger = getLogger({ module: "FileReadWriteNode" });
+
+// Helper functions
+const readFile = (fullPath: string, filePath: string): string => {
+  try {
+    logger.debug(`Attempting to read file: ${fullPath}`);
+    const data = fs.readFileSync(fullPath, "utf-8");
+    logger.debug(`File content read: ${data.substr(0, 100)}...`);
+    return data;
+  } catch (error) {
+    logger.error(`Error reading file: ${fullPath}`, { error });
+    throw new WorkflowError(
+      `Error reading file: ${(error as Error).message}`,
+      {
+        tags: { operation: "read", filePath: fullPath },
+      },
+    );
+  }
+};
+
+const writeFile = async (fullPath: string, fileContent: string, filePath: string): Promise<void> => {
+  try {
+    logger.debug(`Attempting to write file: ${fullPath}`);
+    await Bun.write(fullPath, fileContent);
+    logger.debug(`File written successfully: ${fullPath}`);
+  } catch (error) {
+    logger.error(`Error writing file: ${fullPath}`, { error });
+    throw new WorkflowError(
+      `Error writing file: ${(error as Error).message}`,
+      {
+        tags: { operation: "write", filePath: fullPath },
+      },
+    );
+  }
+};
+
+const createWorkflowError = (error: unknown, fullPath: string, operation: string): WorkflowError => {
+  let errorMessage = "An unknown error occurred.";
+  let errorTags: Record<string, any> = { operation, filePath: fullPath };
+
+  if (error instanceof WorkflowError) {
+    throw error; // Re-throw WorkflowErrors for specific handling elsewhere
+  } else if (error instanceof Error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") {
+      errorMessage = `File not found: ${fullPath}`;
+    } else if (err.code === "EACCES") {
+      errorMessage = `Permission denied: ${fullPath}`;
+    } else {
+      errorMessage = `Error during file operation: ${err.message}`;
+      errorTags.errorCode = err.code; // Add error code to tags
+    }
+  }
+
+  logger.error(errorMessage, { errorTags });
+  return new WorkflowError(errorMessage, {
+    tags: errorTags
+  });
+};
 
 export class FileReadWriteNode implements INodeType {
   description: INodeTypeDescription = {
@@ -44,13 +106,22 @@ export class FileReadWriteNode implements INodeType {
         required: true,
       },
       {
+        displayName: "Variable Name",
+        name: "variableName",
+        type: "string",
+        default: "",
+        placeholder: "Variable name for storing data",
+        description: "The name of the variable to store/read the data",
+        required: false,
+      },
+      {
         displayName: "File Content",
         name: "fileContent",
         type: "string",
         default: "",
         placeholder: "Content to write to the file",
         description: "The content to write to the file",
-        required: true,
+        required: false,
       },
     ],
   };
@@ -66,75 +137,62 @@ export class FileReadWriteNode implements INodeType {
       const variableName = this.getNodeParameter(
         "variableName",
         itemIndex,
+        "data"
       ) as string;
+      const fullPath = path.join(
+        process.env.WORKFLOW_BASE_DIR || ".",
+        filePath,
+      );
 
-      // Use the environment variable to construct the full path
-      const baseDir = process.env.WORKFLOW_BASE_DIR || ".";
-      const fullPath = path.join(baseDir, filePath);
+      logger.debug(`Processing item ${itemIndex + 1}/${items.length}`, {
+        operation,
+        filePath,
+        variableName,
+        fullPath
+      });
 
-      if (operation === "read") {
-        try {
-          const rawData = await fs.readFile(fullPath, "utf-8");
-          const transformedData = {
-            [variableName]: rawData,
-          };
-
+      try {
+        if (operation === "read") {
+          const data = readFile(fullPath, filePath);
           returnData.push({
             json: {
-              [nodeId]: {
+              [variableName]: {
                 status: "success",
-                data: transformedData,
+                data: {
+                  [variableName.trim() || "data"]: data,
+                },
                 source: nodeId,
               },
             },
           });
-        } catch (error) {
-          returnData.push({
-            json: {
-              [nodeId]: {
-                status: "error",
-                error: (error as Error).message,
-                source: nodeId,
-              },
-            },
-          });
+        } else if (operation === "write") {
+          const fileContent = this.getNodeParameter(
+            "fileContent",
+            itemIndex,
+            "",
+          ) as string;
+          await writeFile(fullPath, fileContent, filePath);
+          returnData.push({ json: { [nodeId]: { status: "success", source: nodeId } } });
+        } else {
+          logger.error(`Invalid operation`, { operation });
+          throw new WorkflowError("Invalid operation", { tags: { operation } });
         }
-      } else if (operation === "write") {
-        // Concatenate content from dependencies
-        let fileContent = "";
-        items.forEach((item) => {
-          const sourceNodeId = item.json.source;
-          const content = item.json[sourceNodeId]?.data;
-          if (content) {
-            fileContent += content + "\n"; // Concatenate with newline
-          }
-        });
-
-        try {
-          await fs.writeFile(fullPath, fileContent, "utf-8");
-          returnData.push({
-            json: { [nodeId]: { status: "success", source: nodeId } },
-          });
-        } catch (error) {
-          returnData.push({
-            json: {
-              [nodeId]: {
-                status: "error",
-                error: (error as Error).message,
-                source: nodeId,
-              },
-            },
-          });
-        }
-      } else {
+      } catch (error) {
         returnData.push({
           json: {
             [nodeId]: {
               status: "error",
-              error: "Invalid operation",
+              error: (error as Error).message,
               source: nodeId,
             },
           },
+        });
+        logger.error(`Error processing item ${itemIndex + 1}/${items.length}`, {
+          error,
+          operation,
+          filePath,
+          variableName,
+          fullPath
         });
       }
     }

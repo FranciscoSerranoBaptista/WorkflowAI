@@ -7,7 +7,7 @@ tasks:
     type: read_write_file
     config:
       operation: read
-      filePath: "data/target_audience.txt"
+      filePath: workflows/data/target_audience.txt
       variableName: "TARGET_AUDIENCE" # Assign this to the {{TARGET_AUDIENCE}} field in the prompt
       retryOnFail: false
       continueOnFail: false
@@ -16,7 +16,7 @@ tasks:
     type: read_write_file
     config:
       operation: read
-      filePath: "data/target_audience_problem.txt"
+      filePath: workflows/data/target_audience_problem.txt
       variableName: "PROBLEM" # Assign this to the {{PROBLEM}} field in the prompt
       retryOnFail: false
       continueOnFail: false
@@ -28,9 +28,9 @@ tasks:
       - readProblem
     config:
       llmConfig:
-        model: "text-davinci-003"
-        temperature: 0.7
-        maxTokens: 150
+        model: "gpt-4o"
+        temperature: 0.0
+        maxTokens: 2048
         provider: openai
       promptId: business_identify_personas # Prompt requires {{TARGET_AUDIENCE}} and {{PROBLEM}} to work
       retryOnFail: false
@@ -42,9 +42,9 @@ tasks:
       - identifyPersonas
     config:
       llmConfig:
-        model: "text-davinci-003"
-        temperature: 0.7
-        maxTokens: 150
+        model: "gpt-4o"
+        temperature: 0.0
+        maxTokens: 2048
         provider: openai
       promptId: business_persona_best_year_ever
       retryOnFail: false
@@ -58,9 +58,9 @@ tasks:
     config:
       llmConfig:
         provider: openai
-        model: "text-davinci-003"
-        temperature: 0.7
-        maxTokens: 150
+        model: "gpt-4o"
+        temperature: 0.0
+        maxTokens: 2048
       promptId: business_create_pitch
       retryOnFail: false
       continueOnFail: false
@@ -71,4 +71,4 @@ tasks:
       - createPitchNode
     config:
       operation: write
-      filePath: "output.txt"
+      filePath: "workflows/data/output.txt"

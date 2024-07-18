@@ -6,8 +6,8 @@ import type { YamlWorkflow } from "./types";
 export class YamlParser {
   constructor(
     private filePath: string,
-    private logger: ReturnType<typeof getLogger> = getLogger(),
-  ) {}
+    private logger: ReturnType<typeof getLogger> = getLogger({ module: "YamlParser" })
+  ) { }
 
   public parse(): YamlWorkflow {
     const fileContents = fs.readFileSync(this.filePath, "utf8");

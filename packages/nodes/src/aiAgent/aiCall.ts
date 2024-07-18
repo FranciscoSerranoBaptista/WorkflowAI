@@ -1,5 +1,5 @@
-import axios from "axios";
-import type { INode, INodeTypes } from "workflowai.common";
+import { OpenAI } from "openai";
+import type { INode } from "workflowai.common";
 
 /**
  * Function to execute the LLM node with the provided configuration.
@@ -10,15 +10,15 @@ import type { INode, INodeTypes } from "workflowai.common";
 export async function aiCall(
   nodeId: string,
   getNode: (nodeId: string) => INode | undefined,
-): Promise<void> {
+): Promise<string> {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_API_KEY) {
     throw new Error(`OpenAI API key is not set.`);
   }
 
   const node = getNode(nodeId);
-  if (!node) {
-    throw new Error(`Node ${nodeId} not found`);
+  if (!node || !node.parameters.llmConfig) {
+    throw new Error(`Node ${nodeId} not found or missing configuration`);
   }
 
   const { provider, model, prompt, maxTokens, temperature } =
@@ -28,29 +28,29 @@ export async function aiCall(
     throw new Error(`Provider ${provider} not supported.`);
   }
 
+  const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+
   try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model,
-        max_tokens: maxTokens,
-        temperature,
-        messages: [
-          { role: "system", content: "You are a helpful assistant." },
-          { role: "user", content: prompt },
-        ],
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-      },
-    );
+    const response = await openai.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: maxTokens,
+      temperature,
+    });
 
-    console.log(`Response from OpenAI: `, response.data);
+    console.log(`Response from OpenAI: `, response.choices[0].message.content);
 
-    return response.data;
+    const content = response.choices[0].message?.content;
+
+    if (!content) {
+      throw new Error("AI response content is null or undefined");
+    }
+
+    return content;  // Return the obtained content
+
   } catch (error) {
     console.error(`Error during OpenAI API call: `, error);
 

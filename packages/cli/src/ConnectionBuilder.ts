@@ -5,8 +5,8 @@ import type { ConfigSection } from "./types";
 export class ConnectionBuilder {
   constructor(
     private tasks: ConfigSection[],
-    private logger: ReturnType<typeof getLogger> = getLogger(),
-  ) {}
+    private logger: ReturnType<typeof getLogger> = getLogger({ module: "ConnectionBuilder" })
+  ) { }
 
   public buildConnections(): IConnectionDetails[] {
     const connections: IConnectionDetails[] = [];

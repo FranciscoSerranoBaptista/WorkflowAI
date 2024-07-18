@@ -13,6 +13,7 @@ import { getLogger } from "workflowai.common";
 import { WorkflowValidator } from "./WorkflowValidator";
 import { NodeExecutor } from "./NodeExecutor";
 import { createGetNodeFunction } from "./utils";
+import { NodeOrchestrator } from "./NodeOrchestrator";
 
 export class WorkflowEngine implements IExecuteFunctions {
   private nodeTypesRegistry: INodeTypes;
@@ -21,6 +22,7 @@ export class WorkflowEngine implements IExecuteFunctions {
   public nodeOutputs: { [nodeId: string]: INodeExecutionData[] } = {};
   private validator: WorkflowValidator;
   private executor: NodeExecutor;
+  private orchestrator: NodeOrchestrator;
   private currentNodeId: string | null = null;
 
   constructor(nodeTypesRegistry: INodeTypes = nodeRegistry) {
@@ -28,10 +30,11 @@ export class WorkflowEngine implements IExecuteFunctions {
     this.workflow = this.initializeEmptyWorkflow();
     this.logger = getLogger();
     this.validator = new WorkflowValidator(this.workflow, this.logger);
+    this.orchestrator = new NodeOrchestrator(this.workflow);
     this.executor = new NodeExecutor(
       this.nodeTypesRegistry,
       this.logger,
-      this.getNode.bind(this),
+      this.orchestrator,
     );
   }
 
@@ -51,8 +54,14 @@ export class WorkflowEngine implements IExecuteFunctions {
 
   setWorkflow(workflow: IWorkflow): void {
     this.workflow = workflow;
-    this.logger = getLogger(this.workflow.id);
+    this.logger = getLogger();
     this.validator.setWorkflow(this.workflow);
+    this.orchestrator = new NodeOrchestrator(this.workflow); // Refresh orchestrator
+    this.executor = new NodeExecutor(
+      this.nodeTypesRegistry,
+      this.logger,
+      this.orchestrator,
+    );
   }
 
   getWorkflow(): IWorkflow {
@@ -114,7 +123,7 @@ export class WorkflowEngine implements IExecuteFunctions {
   private addConnectionToSourceNode(connection: IConnectionDetails): void {
     if (
       !this.workflow.connections.connectionsBySourceNode[
-        connection.sourceNodeId
+      connection.sourceNodeId
       ]
     ) {
       this.workflow.connections.connectionsBySourceNode[
@@ -129,7 +138,7 @@ export class WorkflowEngine implements IExecuteFunctions {
   private addConnectionToDestinationNode(connection: IConnectionDetails): void {
     if (
       !this.workflow.connections.connectionsByDestinationNode[
-        connection.destinationNodeId
+      connection.destinationNodeId
       ]
     ) {
       this.workflow.connections.connectionsByDestinationNode[
@@ -246,21 +255,16 @@ export class WorkflowEngine implements IExecuteFunctions {
           throw new Error(`Node type ${node.type} not found in registry`);
         }
 
-        const inputData = this.getInputData();
-        this.logger.info(
-          `Node ${nodeId} input data: ${JSON.stringify(inputData)}`,
-        );
-
         const outputData = await this.executor.executeNode(
           nodeType,
           node,
-          inputData,
-          this,
+          nodeId,
         );
         this.logger.info(
           `Node ${nodeId} produced output: ${JSON.stringify(outputData)}`,
         );
         this.nodeOutputs[nodeId] = outputData;
+        this.orchestrator.setNodeExecutionData(nodeId, outputData); // Set data in orchestrator
       } catch (error) {
         this.logger.error(
           `Execution error on node ${nodeId}: ${(error as Error).message}`,
@@ -284,25 +288,7 @@ export class WorkflowEngine implements IExecuteFunctions {
     nodeId: string,
     nodeOutputs: { [nodeId: string]: INodeExecutionData[] },
   ): INodeExecutionData[] {
-    const incomingConnections =
-      this.workflow.connections.connectionsByDestinationNode[nodeId] || [];
-
-    if (incomingConnections.length === 0) {
-      const node = this.getNode(nodeId);
-      if (node) {
-        return [{ json: node.parameters }];
-      }
-      return [];
-    }
-
-    const inputData: INodeExecutionData[] = [];
-    for (const conn of incomingConnections) {
-      const sourceNodeOutput = nodeOutputs[conn.sourceNodeId];
-      if (sourceNodeOutput) {
-        inputData.push(...sourceNodeOutput);
-      }
-    }
-    return inputData;
+    return this.orchestrator.getInputDataForNode(nodeId); // Using orchestrator
   }
 
   getNodeParameter(name: string, index: number, defaultValue?: any): any {

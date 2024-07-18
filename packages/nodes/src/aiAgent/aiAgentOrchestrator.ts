@@ -1,5 +1,4 @@
 import type { INode, PromptMetaData } from "workflowai.common";
-
 import { aiCall } from "./aiCall";
 
 async function orchestrateAIAgent(
@@ -12,7 +11,7 @@ async function orchestrateAIAgent(
     maxTokens: number;
     temperature: number;
   },
-): Promise<void> {
+): Promise<string> {
   const llmConfig = {
     model: config.model,
     provider: config.provider,

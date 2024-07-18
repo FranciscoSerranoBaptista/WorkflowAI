@@ -8,7 +8,7 @@
       // The path to a JavaScript or TypeScript file to run.
       "program": "${workspaceFolder}/packages/cli/src/cli.ts",
       // The arguments to pass to the program, if any.
-      "args": ["execute", "packages/cli/workflows/workflow.yaml"],
+      "args": ["execute", "./workflows/workflow.yaml"],
       // The working directory of the program.
       "cwd": "${workspaceFolder}",
       // The environment variables to pass to the program.

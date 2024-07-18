@@ -1,13 +1,13 @@
 import type { IWorkflow, IConnectionDetails, INode } from "workflowai.common";
-import type { Logger } from "winston";
+import { getLogger } from "workflowai.common";
 
 export class WorkflowValidator {
   private workflow: IWorkflow;
-  private logger: Logger;
+  private logger: ReturnType<typeof getLogger>;
 
-  constructor(workflow: IWorkflow, logger: Logger) {
+  constructor(workflow: IWorkflow, logger: ReturnType<typeof getLogger>) {
     this.workflow = workflow;
-    this.logger = logger;
+    this.logger = getLogger();
   }
 
   setWorkflow(workflow: IWorkflow): void {

@@ -3,7 +3,7 @@ import { getLogger } from "workflowai.common";
 import type { PromptMetaData } from "workflowai.common";
 
 export class PromptManager {
-  constructor(private logger: ReturnType<typeof getLogger> = getLogger()) {}
+  constructor(private logger: ReturnType<typeof getLogger> = getLogger({ module: "PromptManager" })) { }
 
   public loadPrompts(): { [key: string]: PromptMetaData } {
     const prompts = loadPrompts();

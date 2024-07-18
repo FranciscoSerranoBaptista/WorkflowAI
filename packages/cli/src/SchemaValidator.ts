@@ -9,7 +9,7 @@ export class SchemaValidator {
 
   constructor() {
     this.ajv = new Ajv();
-    this.logger = getLogger();
+    this.logger = getLogger({ module: "SchemaValidator" });
   }
 
   public validate(data: any): void {

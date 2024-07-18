@@ -11,8 +11,8 @@ export class NodeBuilder {
   constructor(
     private tasks: ConfigSection[],
     private prompts: { [key: string]: PromptMetaData },
-    private logger: ReturnType<typeof getLogger> = getLogger(),
-  ) {}
+    private logger: ReturnType<typeof getLogger> = getLogger({ module: "NodeBuilder" })
+  ) { }
 
   public buildNodes(): INode[] {
     return this.tasks.map((task) => {
@@ -23,12 +23,20 @@ export class NodeBuilder {
   }
 
   private createNode(task: ConfigSection): INode {
+
+    const flattenedParameters = {
+      ...task.config,
+      ...task.config.llmConfig,
+    };
+
+    delete flattenedParameters.llmConfig;
+
     return {
       id: task.id,
       name: task.id,
       type: task.type,
       typeVersion: 1,
-      parameters: task.config,
+      parameters: flattenedParameters,
     };
   }
 
@@ -58,8 +66,11 @@ export class NodeBuilder {
     if (promptId) {
       const prompt = this.prompts[promptId];
       if (prompt) {
-        node.parameters.promptId = promptId;
-        node.parameters.promptTemplate = prompt.content;
+        node.parameters = {
+          ...node.parameters,
+          promptId: promptId,
+          promptTemplate: prompt.content,
+        };
       } else {
         this.logger.error(`Unknown promptId ${promptId} for task: ${task.id}`);
         throw new WorkflowError(`Unknown promptId: ${promptId}`);

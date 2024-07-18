@@ -1,0 +1,34 @@
+settings:
+  retryOnFailure: false
+
+tasks:
+  - id: readInput
+    type: read_write_file
+    config:
+      operation: read
+      filePath: workflows/data/input.txt
+      variableName: "INPUT_TEXT"
+      retryOnFail: false
+      continueOnFail: false
+
+  - id: processInput
+    type: ai_agent
+    dependencies:
+      - readInput
+    config:
+      llmConfig:
+        model: "gpt-4o"
+        temperature: 0.9
+        maxTokens: 4096
+        provider: openai
+      promptId: system_test_prompt
+      retryOnFail: false
+      continueOnFail: false
+
+  - id: writeOutput
+    type: read_write_file
+    dependencies:
+      - processInput
+    config:
+      operation: write
+      filePath: "workflows/data/output.txt"

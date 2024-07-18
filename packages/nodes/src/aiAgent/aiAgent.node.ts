@@ -1,13 +1,12 @@
 import type {
-  IDataObject,
   IExecuteFunctions,
   INodeExecutionData,
   INodeType,
   INode,
   INodeTypeDescription,
 } from "workflowai.common";
-import { interpolatePrompt, loadPrompts } from "../utils/prompts";
 import { orchestrateAIAgent } from "./aiAgentOrchestrator";
+import { interpolatePrompt, loadPrompts } from "../utils/prompts";
 
 const prompts = loadPrompts(); // Load prompts once and reuse
 
@@ -76,16 +75,8 @@ export class AiAgentNode implements INodeType {
       const nodeId = this.getNodeParameter("id", itemIndex) as string;
       const model = this.getNodeParameter("model", itemIndex) as string;
       const provider = this.getNodeParameter("provider", itemIndex) as string;
-      const maxTokens = this.getNodeParameter(
-        "maxTokens",
-        itemIndex,
-        100,
-      ) as number;
-      const temperature = this.getNodeParameter(
-        "temperature",
-        itemIndex,
-        0.7,
-      ) as number;
+      const maxTokens = this.getNodeParameter("maxTokens", itemIndex) as number;
+      const temperature = this.getNodeParameter("temperature", itemIndex) as number;
       const promptId = this.getNodeParameter("promptId", itemIndex) as string;
 
       // Assuming that the `node` information should be part of the parameters
@@ -114,12 +105,18 @@ export class AiAgentNode implements INodeType {
 
         // Prepare variables for interpolation
         const variables: { [key: string]: string } = {};
-        const item = items[itemIndex];
-        for (const [key, data] of Object.entries(item.json[nodeId].data)) {
-          if (typeof data === "object" && data !== null) {
-            variables[key] = JSON.stringify(data);
-          } else if (typeof data === "string") {
-            variables[key] = data;
+        for (const item of items) {
+          for (const itemKey in item.json) {
+            if (item.json[itemKey] && item.json[itemKey].data) {
+              const dataObject = item.json[itemKey].data;
+              for (const [key, data] of Object.entries(dataObject)) {
+                if (typeof data === "object" && data !== null) {
+                  variables[key] = JSON.stringify(data);
+                } else if (typeof data === "string") {
+                  variables[key] = data;
+                }
+              }
+            }
           }
         }
 

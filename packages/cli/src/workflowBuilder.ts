@@ -6,18 +6,18 @@ import { NodeBuilder } from "./NodeBuilder";
 import { PromptManager } from "./PromptManager";
 import { SchemaValidator } from "./SchemaValidator";
 import { YamlParser } from "./YamlParser";
+import { getGlobalWorkflowId } from "workflowai.common";
 
 export class WorkflowBuilder {
-  private logger: ReturnType<typeof getLogger>;
   private yamlParser: YamlParser;
   private schemaValidator: SchemaValidator;
   private nodeBuilder: NodeBuilder;
   private connectionBuilder: ConnectionBuilder;
   private promptManager: PromptManager;
+  private logger: ReturnType<typeof getLogger>;
 
   constructor(filePath: string) {
-    const workflowId = this.generateUniqueId();
-    this.logger = getLogger(workflowId);
+    this.logger = getLogger({ module: "WorkflowBuilder" });
     this.logger.debug(`Initializing WorkflowBuilder with file: ${filePath}`);
 
     this.validateFilePath(filePath);
@@ -57,7 +57,7 @@ export class WorkflowBuilder {
     this.logger.debug(`End Node ID: ${endNodeId}`);
 
     return {
-      id: this.generateUniqueId(),
+      id: getGlobalWorkflowId(),
       name: "auto-generated-workflow",
       nodes,
       connections: {
@@ -71,7 +71,4 @@ export class WorkflowBuilder {
     };
   }
 
-  private generateUniqueId(): string {
-    return "_" + Math.random().toString(36).substr(2, 9);
-  }
 }
